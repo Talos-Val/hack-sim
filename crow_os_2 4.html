@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>CROW_OS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+
+:root{
+  --bg:#060a08;
+  --bg2:#0a100d;
+  --grid:#0d1712;
+  --green:#39ff8a;
+  --green-dim:#1c7a4a;
+  --amber:#ffb454;
+  --red:#ff5d5d;
+  --cyan:#5de4ff;
+  --text:#cdeede;
+  --text-dim:#5c7a6c;
+  --border:#16352490;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse at 50% -10%, #0d1f15 0%, var(--bg) 55%),
+    repeating-linear-gradient(0deg, var(--grid) 0px, var(--grid) 1px, transparent 1px, transparent 28px);
+  color:var(--text);
+  font-family:'JetBrains Mono', monospace;
+  font-size:14px;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+::selection{background:var(--green);color:#000;}
+::-webkit-scrollbar{width:8px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--green-dim);}
+
+/* ---------- topbar ---------- */
+#topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,#0b1410,#08100c);
+  font-size:11px;color:var(--text-dim);letter-spacing:.5px;
+  flex-wrap:wrap;gap:6px;
+}
+#topbar b{color:var(--green);}
+#clock{color:var(--cyan);}
+
+/* ---------- boot screen ---------- */
+#boot{
+  position:fixed;inset:0;background:#020403;color:var(--green);
+  font-size:13px;padding:24px;z-index:50;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+#boot pre{white-space:pre-wrap;line-height:1.55;margin:0;flex:1;overflow:hidden;}
+#boot .skip{position:absolute;bottom:18px;right:24px;font-size:11px;color:var(--text-dim);}
+.l-ok{color:var(--green);}
+.l-warn{color:var(--amber);}
+.l-err{color:var(--red);}
+
+/* ---------- layout ---------- */
+#app{flex:1;display:flex;min-height:0;overflow-y:auto;}
+#main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;}
+#side{
+  width:280px;flex-shrink:0;border-left:1px solid var(--border);
+  background:#070d0a;padding:14px;overflow-y:auto;
+}
+@media (max-width:780px){
+  #app{flex-direction:column;}
+  #main{order:1;flex:none;min-height:62vh;}
+  #side{width:100%;border-left:none;border-top:1px solid var(--border);order:2;flex:none;}
+}
+
+/* ---------- ascii logo ---------- */
+.logo{
+  color:var(--green);font-size:9px;line-height:1.15;white-space:pre;
+  padding:14px 16px 4px;text-shadow:0 0 8px rgba(57,255,138,.35);
+  overflow-x:auto;
+}
+@media (max-width:780px){.logo{display:none;}}
+
+/* ---------- terminal ---------- */
+#term-wrap{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 16px 16px;}
+#term{
+  flex:1;min-height:0;overflow-y:auto;padding:10px 14px;
+  background:rgba(6,12,9,.6);border:1px solid var(--border);border-radius:2px;
+  line-height:1.58;
+}
+#term .ln{white-space:pre-wrap;word-break:break-word;}
+.prompt-tag{color:var(--green-dim);}
+.echo-cmd{color:var(--text);}
+.out-ok{color:var(--green);}
+.out-info{color:var(--cyan);}
+.out-warn{color:var(--amber);}
+.out-err{color:var(--red);}
+.out-dim{color:var(--text-dim);}
+.brief-title{color:var(--amber);font-weight:700;}
+
+#inputline{
+  display:flex;align-items:center;gap:8px;margin-top:8px;
+  border:1px solid var(--border);background:rgba(6,12,9,.6);
+  padding:8px 12px;border-radius:2px;
+}
+#inputline .ps{color:var(--green);flex-shrink:0;}
+#cmdin{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-family:inherit;font-size:14px;caret-color:var(--green);
+}
+#hiddenfile{display:none;}
+
+/* ---------- side panel ---------- */
+.panel{margin-bottom:18px;}
+.panel h4{
+  margin:0 0 8px;font-size:11px;letter-spacing:1.5px;color:var(--green-dim);
+  border-bottom:1px solid var(--border);padding-bottom:6px;text-transform:uppercase;
+}
+.stat-row{display:flex;justify-content:space-between;font-size:12px;margin:5px 0;color:var(--text-dim);}
+.stat-row span:last-child{color:var(--text);}
+.bar{height:6px;background:#0e1d16;border:1px solid var(--border);margin-top:3px;}
+.bar i{display:block;height:100%;background:var(--green);transition:width .3s;}
+.bar.risk i{background:var(--red);}
+.bar.ghost i{background:var(--cyan);}
+#missionlist{font-size:11px;max-height:220px;overflow-y:auto;}
+.mrow{display:flex;justify-content:space-between;padding:2px 0;color:var(--text-dim);}
+.mrow.done{color:var(--green-dim);}
+.mrow.cur{color:var(--amber);}
+.badge-chip{
+  display:inline-block;background:#0e1d16;border:1px solid var(--green-dim);
+  color:var(--green);font-size:10px;padding:2px 6px;margin:2px 3px 0 0;border-radius:2px;
+}
+
+a{color:var(--cyan);}
+
+/* ---------- footer / session bar (ref-site style) ---------- */
+#footerbar{
+  border-top:1px solid var(--border);
+  background:linear-gradient(180deg,#08100c,#05090700);
+  padding:7px 16px;font-size:10.5px;color:var(--text-dim);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;letter-spacing:.4px;
+}
+#footerbar .sid{color:var(--green-dim);}
+#footerbar a{cursor:pointer;}
+#footerbar2{
+  border-top:1px solid var(--border);
+  padding:6px 16px 8px;font-size:10px;color:var(--text-dim);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;
+}
+#footerbar2 a{color:var(--cyan);}
+
+/* ---------- exec-card command blocks (ref-site style) ---------- */
+.cmdblock{
+  border:1px solid var(--border);background:rgba(10,18,14,.55);
+  margin:10px 0;padding:10px 12px;border-left:2px solid var(--green-dim);
+}
+.cmdblock.hot{border-left-color:var(--amber);background:rgba(40,28,8,.25);}
+.cmdblock .execline{color:var(--green-dim);font-size:11.5px;}
+.cmdblock .tags{color:var(--text-dim);font-size:10px;letter-spacing:1px;margin-top:2px;}
+.cmdblock .nm{color:var(--text);font-weight:700;}
+.cmdblock .desc{color:var(--text-dim);font-size:12px;margin-top:3px;}
+.cmdblock.hot .desc{color:var(--amber);}
+.cat-head{
+  color:var(--cyan);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+  margin:18px 0 4px;border-bottom:1px solid var(--border);padding-bottom:4px;
+}
+
+/* ---------- account / export panel ---------- */
+.acct-row{display:flex;gap:6px;margin:6px 0;}
+.acct-row input[type=password], .acct-row input[type=text]{
+  flex:1;background:#0a140f;border:1px solid var(--border);color:var(--text);
+  font-family:inherit;font-size:11px;padding:6px 8px;outline:none;
+}
+.acct-row input:focus{border-color:var(--green-dim);}
+.btn-mini{
+  background:#0e1d16;border:1px solid var(--green-dim);color:var(--green);
+  font-family:inherit;font-size:11px;padding:6px 10px;cursor:pointer;letter-spacing:.5px;
+}
+.btn-mini:hover{background:var(--green-dim);color:#04140b;}
+.acct-hint{font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div id="boot">
+<pre id="bootlines"></pre>
+<div class="skip">[ klicken zum überspringen ]</div>
+</div>
+
+<div id="topbar">
+  <div>CROW_OS <b>3.1.4-lts</b> | USER: <b id="opname">root</b> | FS: /dev/sda1 | <span style="color:var(--green)">[ONLINE]</span></div>
+  <div id="clock">--:--:--</div>
+</div>
+
+<div id="app">
+  <div id="main">
+    <div class="logo"> ____  ____  _  _  ___  ____     ____  ____
+(  _ \\(  _ \\( \\( )/ __)( ___)   /  _ \\( ___)
+ ) __/ )   / )  (( (__  )__)    ) (_) ))__)
+(__)  (_)\\_)(_)\\_)\\___)(____)\\__\\____/(____)</div>
+    <div id="term-wrap">
+      <div id="term"></div>
+      <div id="inputline">
+        <span class="ps">[root@crow:~]#</span>
+        <input id="cmdin" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Befehl eingeben — 'help' für Übersicht, Tab zum Vervollständigen" />
+      </div>
+      <input id="hiddenfile" type="file" accept=".txt" />
+    </div>
+  </div>
+
+  <div id="side">
+    <div class="panel">
+      <h4>Operator</h4>
+      <div class="stat-row"><span>Rang</span><span id="s-rank">ROOKIE</span></div>
+      <div class="stat-row"><span>Mission</span><span id="s-mission">01 / 50</span></div>
+      <div class="stat-row"><span>Energie</span><span id="s-energy">100%</span></div>
+      <div class="bar"><i id="b-energy" style="width:100%"></i></div>
+      <div class="stat-row"><span>Ghost-Level</span><span id="s-ghost">5</span></div>
+      <div class="bar ghost"><i id="b-ghost" style="width:100%"></i></div>
+      <div class="stat-row"><span>Entdeckung</span><span id="s-risk">0%</span></div>
+      <div class="bar risk"><i id="b-risk" style="width:0%"></i></div>
+    </div>
+    <div class="panel">
+      <h4>Aktuelle Mission</h4>
+      <div id="s-missiontitle" style="color:var(--amber);font-size:12px;font-weight:700;">—</div>
+      <div id="s-step" class="out-dim" style="font-size:11px;margin-top:6px;">—</div>
+      <button class="btn-mini" id="btn-hint" style="margin-top:8px;">💡 Hinweis</button>
+    </div>
+    <div class="panel">
+      <h4>Badges</h4>
+      <div id="s-badges" style="font-size:11px;color:var(--text-dim);">keine</div>
+    </div>
+    <div class="panel">
+      <h4>Missionsliste</h4>
+      <div id="missionlist"></div>
+    </div>
+
+    <div class="panel">
+      <h4>Account — Export / Import</h4>
+      <div class="acct-row">
+        <input id="exp-pass" type="password" placeholder="Passwort wählen" />
+        <button class="btn-mini" id="btn-export">↓ Export</button>
+      </div>
+      <div class="acct-row">
+        <input id="imp-pass" type="password" placeholder="Passwort eingeben" />
+        <button class="btn-mini" id="btn-import">↑ Import</button>
+      </div>
+      <div class="acct-hint">Export verschlüsselt deinen Spielstand (AES-GCM) als .txt-Datei und lädt sie herunter — entspricht <b>save --export &lt;pw&gt;</b>. Import lädt eine solche Datei wieder ein — entspricht <b>save --import &lt;pw&gt;</b>. Dein Fortschritt wird zusätzlich automatisch lokal gesichert.</div>
+    </div>
+  </div>
+</div>
+
+<div id="footerbar">
+  <div><span class="sid">[0x4c0w]</span> sessions_active: 1 | uptime: <span id="uptime">00d 00h 00m 00s</span></div>
+  <div>SID: <span class="sid">0x4C0W</span> | TLS 1.3 ENCRYPTED &nbsp;|&nbsp; <a id="footer-cmds">→ commands</a> &nbsp;|&nbsp; <a id="footer-export">→ export</a></div>
+</div>
+<div id="footerbar2">
+  <div>© Prince of Crows — All rights reserved</div>
+  <div>[ → <a href="https://talos-val.github.io/database" target="_blank" rel="noopener">talos-val.github.io/database</a> ]</div>
+</div>
+
+<script>
+/* =========================================================
+   CROW_OS — Terminal Hacking Sim
+   ========================================================= */
+
+const term = document.getElementById('term');
+const cmdin = document.getElementById('cmdin');
+const hiddenfile = document.getElementById('hiddenfile');
+
+function line(html, cls){
+  const d = document.createElement('div');
+  d.className = 'ln' + (cls?(' '+cls):'');
+  d.innerHTML = html;
+  term.appendChild(d);
+  term.scrollTop = term.scrollHeight;
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ---------------- BOOT SEQUENCE ---------------- */
+const bootSeq = [
+  ['[ OK ] Starting crow_kernel 3.1.4 ...', 'l-ok'],
+  ['[ OK ] Mounting encrypted volume /dev/crow0 ... done', 'l-ok'],
+  ['[WARN] eth0: packet loss 0.4% — connection unstable', 'l-warn'],
+  ['[ OK ] Decrypting session keys ... done', 'l-ok'],
+  ['[ERR ] /proc/shadows: permission denied (expected)', 'l-err'],
+  ['[ OK ] Loading operator profile ...', 'l-ok'],
+  ['[ OK ] Rendering terminal ...', 'l-ok'],
+];
+const bootPre = document.getElementById('bootlines');
+let bi = 0;
+function bootStep(){
+  if(bi >= bootSeq.length){ setTimeout(finishBoot, 400); return; }
+  const [txt,cls] = bootSeq[bi];
+  const s = document.createElement('span');
+  s.className = cls;
+  s.textContent = txt + '\n';
+  bootPre.appendChild(s);
+  bi++;
+  setTimeout(bootStep, 220 + Math.random()*180);
+}
+function finishBoot(){
+  document.getElementById('boot').style.display='none';
+  init();
+}
+document.getElementById('boot').addEventListener('click', finishBoot);
+bootStep();
+
+/* ---------------- CLOCK ---------------- */
+setInterval(()=>{
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('de-DE');
+},1000);
+
+/* =========================================================
+   GAME DATA
+   ========================================================= */
+const STAGES = ['ROOKIE','OPERATIVE','GHOST','SPECTER','PHANTOM'];
+function stageFor(idx){ return STAGES[Math.min(4, Math.floor(idx/10))]; }
+
+// each mission: id, title, brief, steps:[{any:[cmds]}], reward badge(optional)
+const M = [
+{t:"Terminal-Init", b:"Erste Schritte im System. Prüfe deinen eigenen Status und scanne ein offenes Testsystem.", s:[["crow --status"],["probe"]]},
+{t:"Erste Verbindung", b:"Aktiviere zunächst deine Tarnung, prüfe dann ob der Router erreichbar ist und route deine Verbindung über ihn.", s:[["ghost 1","ghost"],["ping"],["relay"]]},
+{t:"Netzwerkgerät", b:"Ein ungeschütztes Gerät hängt offen im Netz. Navigiere durch sein flaches Dateisystem.", s:[["weave"],["ls"]]},
+{t:"Extraktion I", b:"Eine Datei liegt in einem ungeschützten Verzeichnis. Kein Alarm, kein Timer — extrahiere sie.", s:[["siphon"]]},
+{t:"Offener Zugang", b:"Brich über den offen stehenden Zugang ein und beseitige danach deine Spur.", s:[["breach"],["burn"]]},
+{t:"Spurenbeseitigung", b:"Zugang ist bereits vorhanden — räum vollständig auf.", s:[["burn --all","burn"],["rewrite"]]},
+{t:"Schlüsselpaar", b:"Der Key zur Entschlüsselung liegt offen auf demselben System.", s:[["decrypt"]]},
+{t:"Archivlabyrinth", b:"Ein tief verschachteltes Verzeichnis. Bahn dir den Weg und lies unterwegs Dateianfänge.", s:[["weave"],["peek"],["weave"]]},
+{t:"Relay-Kette", b:"Route deine Verbindung über drei Knoten und verschaffe dir einen Netzwerküberblick.", s:[["relay"],["relay"],["relay"],["echo --map","echo"]]},
+{t:"Freie Kombination", b:"Kein Tutorial mehr. Kleines Firmennetz — finde selbst den sauberen Weg durch: scannen, tarnen, einbrechen, navigieren, extrahieren, Spuren tilgen.", s:[["probe"],["ghost"],["breach"],["weave"],["siphon"],["burn"]]},
+
+{t:"Wartungsfenster", b:"Das IDS ist nur kurz deaktiviert. Extrahiere das große Verzeichnis jetzt in einem Zug.", s:[["siphon --bulk","siphon"]]},
+{t:"Zwei Routen", b:"Zwei Ports stehen offen — wähle deinen Weg und brich ein.", s:[["breach"]]},
+{t:"Heiße Spur", b:"Die Rückverfolgung läuft bereits. Unterbrich sie und sichere parallel die Zieldatei.", s:[["trace --kill","trace"],["siphon"]]},
+{t:"Doppelsystem", b:"System A enthält den Key für System B. Miss zuerst die Verbindungsqualität, dann baue den Tunnel.", s:[["latency"],["tunnel"]]},
+{t:"IDS-Takt", b:"Analysiere das Scan-Intervall, bevor du einbrichst.", s:[["freq"],["breach"]]},
+{t:"Geteilter Key", b:"Ein Key liegt in zwei Fragmenten vor. Finde Hinweise, füge sie zusammen, entschlüssele.", s:[["peek"],["stitch"],["decrypt"]]},
+{t:"Credential-Harvest", b:"Sammle Zugangsdaten und nutze sie, um eine Identität zu kopieren.", s:[["harvest"],["clone"]]},
+{t:"Stealth-Install", b:"Installiere eine dauerhafte Backdoor — kein einziger Alarm darf ausgelöst werden.", s:[["backdoor"]]},
+{t:"Netzwerkanalyse", b:"Kartiere das 12-Knoten-Netz vollständig.", s:[["map"]]},
+{t:"Vier Phasen", b:"Recon, Einbruch, Extraktion, Reinigung — führe alle vier Phasen ohne Anleitung aus.", s:[["probe"],["breach"],["siphon"],["burn"]]},
+
+{t:"Zwei Ziele", b:"Nach der Extraktion: sende die Daten an Ziel A (riskanter, mehr Punkte) oder Ziel B (sicherer, weniger Punkte).", s:[["siphon"],["sever","cloak","tunnel"]]},
+{t:"Honeypot", b:"Das System sieht perfekt aus. Prüfe es, bevor du etwas extrahierst — die Falle erkennt nur, wer zuerst scannt.", s:[["scan"],["fingerprint"],["sever"]]},
+{t:"Drei in Reihe", b:"Drei Systeme, jedes mit einem Zugangsfragment fürs nächste. Kombiniere die Fragmente.", s:[["breach"],["stitch"],["breach"]]},
+{t:"Kanalrauschen", b:"Zwei Kanäle, einer mit Falschdaten. Analysiere die Frequenz und höre den richtigen ab.", s:[["freq"],["intercept"]]},
+{t:"Ghost-Degradation", b:"Dein Tarnlevel sinkt mit jedem Fehler. Bewege dich präzise durchs System.", s:[["ghost"],["weave"],["siphon"]]},
+{t:"Konkurrenzagent", b:"Ein gegnerischer Agent blockiert deine Befehle. Höre seinen Kanal ab und lenke ihn ab.", s:[["intercept"],["flare"]]},
+{t:"Alte Infrastruktur", b:"Eine veraltete Relay-Kette mit künstlicher Verzögerung. Geduld zählt.", s:[["relay"],["relay"]]},
+{t:"Update-Injektion", b:"Beobachte den Verteilungsserver und injiziere den Payload im richtigen Moment.", s:[["watch"],["inject"]]},
+{t:"300 Sekunden", b:"Pflichtliste aller bisher gelernten Befehle — schnell und ohne Checkpoint.", s:[["probe"],["ghost"],["breach"],["siphon"],["burn"]]},
+{t:"Dreigleisige Abwehr", b:"Drei parallele IDS-Systeme, ein Gegenagent aktiv. Das Zieldokument darf nur gelesen werden — prüfe vorher deine Sichtbarkeit.", s:[["audit"],["peek"]]},
+
+{t:"Widerspruch", b:"Zwei widersprüchliche Datensätze auf demselben Server. Prüfe Metadaten und Zufälligkeit, bevor du löschst.", s:[["diff --meta","diff"],["entropy"],["shred"]]},
+{t:"Das Labyrinth", b:"Acht Ebenen verschachteltes Filesystem. Spiegle Teilverzeichnisse und leere Köder-Dateien auf dem Weg.", s:[["weave"],["mirror"],["hollow"],["weave"]]},
+{t:"Vierfachverschlüsselung", b:"Vier übereinanderliegende Keys. Jeder hinter einem eigenen Rätsel — kombiniere sie alle.", s:[["stitch"],["stitch"],["stitch"],["stitch"],["decrypt"]]},
+{t:"Kameras", b:"Ein Kamera-Netzwerk. Unterdrücke jede Kamera und tarne deine eigene Signatur.", s:[["muffle"],["spoof"]]},
+{t:"Identitätslöschung", b:"Lösche deine Identität: schnell und kompromisslos mit void, oder langsam und präzise mit vanish.", s:[["void","vanish"]]},
+{t:"Stiller Dieb", b:"Die Anomalie-Erkennung reagiert auf große Pakete. Komprimiere vorab und extrahiere in kleinen Häppchen.", s:[["compress"],["siphon --quiet","siphon"]]},
+{t:"Lernende Abwehr", b:"Eine KI blockiert wiederholte Befehle. Befrage die interne Datenbank nach Schwachstellen.", s:[["oracle"]]},
+{t:"Verzögerter Ausfall", b:"Setze eine verzögerte Kettenreaktion in Gang und bereinige danach alle Spuren.", s:[["cascade"],["timestamp --spoof","timestamp"],["rewrite"]]},
+{t:"Gegeninvasion", b:"Dein eigenes System wurde kompromittiert. Finde den Eindringling, sichere ab, locke ihn in eine Falle.", s:[["scan"],["tripwire --set","tripwire"],["decoy --deploy","decoy"]]},
+{t:"Fünf Uhren", b:"Fünf Systeme, fünf Timer. Plane die Reihenfolge und koordiniere deine Aktionen.", s:[["echo --map","echo"],["sync"]]},
+
+{t:"Fragmentpuzzle", b:"Zwölf Datenfragmente aus früheren Missionen. Füge sie zusammen und prüfe die Integrität.", s:[["stitch"],["diff"],["entropy"]]},
+{t:"Tiefarchiv", b:"Ein mehrfach verschachteltes Archiv. Vier Schlüsselebenen müssen aufgespürt und entschlüsselt werden.", s:[["oracle --deep","oracle"],["decrypt"]]},
+{t:"Verbrannte Identität", b:"Deine Zugangsdaten sind kompromittiert. Aktiviere dauerhafte Tarnung und verschleiere jede Verbindung.", s:[["phantom --mode","phantom"],["cloak"]]},
+{t:"Zwei Fronten", b:"Verteidige und greife gleichzeitig — wehre eingehende Angriffe ab, während du dein Ziel infiltrierst.", s:[["tripwire --check","tripwire"],["breach"],["siphon"]]},
+{t:"Besetztes Backdoor", b:"Deine alte Backdoor ist entdeckt und besetzt. Hänge dich unsichtbar an einen legitimen Prozess.", s:[["parasite"],["siphon"]]},
+{t:"Selbstabbild", b:"Das Zielsystem gleicht deinem eigenen. Prüfe deine eigenen bekannten Schwachstellen.", s:[["audit"],["breach"]]},
+{t:"Schwarzes Loch", b:"Das System löscht sich während du darin bist. Spiegle es in Echtzeit, bevor es zerfällt.", s:[["mirror --live","mirror"],["resurrect"]]},
+{t:"Finaler Auftrag", b:"Zwei gültige Wege: maximale Extraktion mit Risiko, oder vollständige Spurenbeseitigung im Stealth.", s:[["siphon --bulk","vanish"]]},
+{t:"Kein Ausweg", b:"Dieses System lässt sich nicht kompromittieren. Überlebe — der einzig sichere Ausweg ist der Abbruch.", s:[["abort"]]},
+{t:"THRONE", b:"Das finale System. Drei taktische Wege: vollständige Extraktion, Komplettlöschung, oder spurlose Tarnung.", s:[["siphon --bulk","void","vanish"]]},
+];
+
+const MISSIONS = M.map((m,i)=>({
+  id:i+1, title:m.t, brief:m.b,
+  steps:m.s.map(opts=>({any:opts})),
+  stage: stageFor(i)
+}));
+
+const BADGE_FOR = {10:"RANK: OPERATIVE",20:"RANK: GHOST",30:"RANK: SPECTER",40:"RANK: PHANTOM",45:"STEALTH MASTER",
+  48:"GHOST PROTOCOL",49:"SURVIVOR",50:"THRONE BREAKER"};
+
+const CMD_DEFS = {
+  "Verbindung & Netzwerk":[
+    ["probe <target>","probe","Scannt Ziel auf Ports und Schwachstellen"],
+    ["ping <target>","ping","Prüft ob Ziel erreichbar ist"],
+    ["relay <node>","relay","Leitet Verbindung über einen anderen Knoten um"],
+    ["trace --kill","trace","Unterbricht aktive Rückverfolgung"],
+    ["mask <on|off>","mask","Aktiviert IP-Verschleierung"],
+    ["tunnel <a> <b>","tunnel","Baut verschlüsselten Tunnel zwischen zwei Knoten"],
+    ["spoof <ip>","spoof","Gibt vor, eine andere IP-Adresse zu sein"],
+    ["jam <freq>","jam","Stört Kommunikation auf einer bestimmten Frequenz"],
+    ["sever","sever","Kappt sofort alle aktiven Verbindungen ohne Spur"],
+    ["echo --map","echo","Zeigt aktive Verbindungen und Knoten als Netzwerkkarte"],
+    ["latency <node>","latency","Misst Verbindungsqualität zu einem Knoten"],
+    ["bounce <a> <b> <c>","bounce","Leitet Verbindung durch Knotenkette ohne Rückverfolgbarkeit"],
+    ["cloak <connection>","cloak","Tarnt eine aktive Verbindung als legitimen Dienst-Traffic"],
+    ["sync <node>","sync","Synchronisiert Timing mit Knoten für koordinierte Aktionen"],
+    ["flood <target>","flood","Erzeugt Ablenkungsverkehr auf einem Kanal"],
+  ],
+  "Infiltration & Zugang":[
+    ["breach <port> <method>","breach","Einbruch über Port mit gewählter Methode"],
+    ["ghost <1-5>","ghost","Setzt Tarnungsstufe 1–5"],
+    ["slip <service>","slip","Schleicht sich in laufenden Dienst ein ohne Login"],
+    ["forge <token>","forge","Fälscht einen Authentifizierungstoken"],
+    ["clone <user>","clone","Kopiert eine bestehende Benutzeridentität"],
+    ["elevate","elevate","Versucht eigene Berechtigungen zu erhöhen"],
+    ["lockpick <door>","lockpick","Knackt eine verschlossene Systemtür"],
+    ["impersonate <user>","impersonate","Gibt vor, ein anderer User zu sein"],
+    ["backdoor <name>","backdoor","Erstellt dauerhaften versteckten Zugang"],
+    ["rootkit --deploy","rootkit","Installiert persistenten Kernel-Level-Zugang"],
+    ["bypass <filter>","bypass","Umgeht Sicherheitsschranke ohne Einbruch"],
+    ["pivot <system>","pivot","Nutzt kompromittiertes System als Sprungbrett"],
+    ["keylog <process>","keylog","Zeichnet Eingaben eines laufenden Prozesses auf"],
+    ["session --steal <id>","session","Übernimmt aktive fremde Session ohne Login"],
+    ["escalate <service>","escalate","Nutzt Schwachstelle zur Rechteerhöhung"],
+  ],
+  "Dateisystem & Daten":[
+    ["weave <path>","weave","Navigiert im Zieldateisystem"],
+    ["ls","ls","Listet Dateien im aktuellen Verzeichnis"],
+    ["siphon <file>","siphon","Extrahiert eine Datei"],
+    ["siphon --bulk <dir>","siphon","Extrahiert ganzes Verzeichnis"],
+    ["siphon --quiet <file>","siphon","Extrahiert in kleinen Paketen ohne Anomalie-Trigger"],
+    ["decrypt <file> [key]","decrypt","Entschlüsselt eine Datei"],
+    ["encrypt <file>","encrypt","Verschlüsselt Datei mit eigenem Key"],
+    ["shred <file>","shred","Löscht Datei unwiederbringlich"],
+    ["mirror <file>","mirror","Erstellt getarnte Kopie an anderem Pfad"],
+    ["hollow <file>","hollow","Leert eine Datei ohne sie zu löschen"],
+    ["stitch <a> <b>","stitch","Fügt zwei Dateifragmente zusammen"],
+    ["peek <file>","peek","Liest die ersten Zeilen einer Datei"],
+    ["inject <file> <payload>","inject","Bettet Code in bestehende Datei ein"],
+    ["tag <file>","tag","Markiert Datei zur späteren Lokalisierung"],
+    ["diff <a> <b>","diff","Vergleicht zwei Dateien auf Unterschiede"],
+    ["compress <dir>","compress","Komprimiert Verzeichnis für Exfiltration"],
+    ["rename <file> <alias>","rename","Benennt Datei zur Tarnung um"],
+  ],
+  "Spuren & Gegenmaßnahmen":[
+    ["burn <log>","burn","Löscht spezifischen Log-Eintrag"],
+    ["burn --all","burn","Löscht alle Spuren auf dem Zielsystem"],
+    ["rewrite <log> <entry>","rewrite","Überschreibt Log mit gefälschtem Inhalt"],
+    ["decoy --deploy","decoy","Setzt einen falschen Datenköder aus"],
+    ["flare","flare","Löst falschen Alarm auf anderem System aus"],
+    ["muffle <process>","muffle","Unterdrückt Aktivitätsmeldungen eines Prozesses"],
+    ["vanish","vanish","Entfernt alle eigenen Spuren vollständig"],
+    ["timestamp --spoof <file>","timestamp","Setzt Zeitstempel auf beliebigen Wert"],
+    ["null <event>","null","Verhindert Ereignis-Eintrag in Logs"],
+    ["ghost-write <log> <text>","ghost-write","Schreibt plausiblen Fake-Eintrag"],
+    ["cover <path>","cover","Überschreibt Zugriffshistorie eines Verzeichnisses"],
+    ["loop <process>","loop","Wiederholt alte Logs zur Verschleierung"],
+  ],
+  "System & Analyse":[
+    ["crow --status","crow","Zeigt Energie, Tarnung, Entdeckungsrisiko"],
+    ["crow --log","crow","Zeigt eigenes Aktivitätsprotokoll der Session"],
+    ["crow --profile","crow","Zeigt Operator-Profil und Missionen"],
+    ["scan <process>","scan","Analysiert einen laufenden Prozess"],
+    ["map <network>","map","Kartiert gesamtes Subnetzwerk"],
+    ["freq <target>","freq","Analysiert Kommunikationsmuster/Scan-Intervalle"],
+    ["watch <path>","watch","Überwacht Verzeichnis in Echtzeit"],
+    ["intercept <channel>","intercept","Hört einen Kommunikationskanal ab"],
+    ["payload --list","payload","Zeigt verfügbare Schadcode-Module"],
+    ["implant <payload>","implant","Installiert dauerhaften Code im Zielsystem"],
+    ["harvest <type>","harvest","Sammelt Daten (credentials/keys/comms/metadata)"],
+    ["oracle <query>","oracle","Befragt Datenbank nach Exploits/Schwachstellen"],
+    ["fingerprint <system>","fingerprint","Erstellt Profil eines Zielsystems"],
+    ["audit <system>","audit","Prüft eigene sichtbare Spuren auf Zielsystem"],
+    ["entropy <file>","entropy","Misst Zufälligkeit zur Erkennung von Verschlüsselung"],
+  ],
+  "Fortgeschrittene & Endgame":[
+    ["splinter <system>","splinter","Teilt ein System in isolierte Segmente"],
+    ["cascade <trigger>","cascade","Setzt verzögerte Kettenreaktion in Gang"],
+    ["parasite <process>","parasite","Hängt sich unsichtbar an legitimen Prozess"],
+    ["resurrect <session>","resurrect","Stellt unterbrochene Session wieder her"],
+    ["void <target>","void","Löscht alle Daten auf Zielsystem dauerhaft"],
+    ["phantom --mode","phantom","Aktiviert maximale Tarnung, kostet alles andere"],
+    ["abort","abort","Mission sofort abbrechen, alle Verbindungen kappen"],
+    ["lockdown <system>","lockdown","Sperrt kompromittiertes System für andere"],
+    ["mirror --live <system>","mirror","Echtzeit-Spiegelung eines laufenden Systems"],
+    ["fracture <auth>","fracture","Bricht Authentifizierungssystem in Segmente"],
+    ["blackout <node>","blackout","Schaltet Netzwerkknoten stumm, bleibt online"],
+    ["reboot --silent <system>","reboot","Neustart ohne sichtbare Unterbrechung"],
+    ["tripwire --set <path>","tripwire","Legt Alarm-Trigger in Verzeichnis"],
+    ["tripwire --check","tripwire","Prüft ob eigene Tripwires ausgelöst wurden"],
+  ],
+  "Speicher-Befehle":[
+    ["save --export <pw>","save","Exportiert verschlüsselten Spielstand als TXT"],
+    ["save --import <pw>","save","Importiert und entschlüsselt Spielstand"],
+    ["save --status","save","Zeigt aktuellen Speicherstand"],
+    ["save --reset","save","Löscht lokalen Spielstand nach Bestätigung"],
+  ],
+};
+// Befehle, die bis (inkl.) der aktuellen Mission in Missionsschritten vorkommen,
+// gelten als "bekannt" und werden in der Befehlsreferenz freigeschaltet.
+function knownCommandBases(){
+  const idx = Math.min(activeIdx(), MISSIONS.length-1);
+  const set = new Set();
+  for(let i=0;i<=idx;i++){
+    MISSIONS[i].steps.forEach(step=>{
+      step.any.forEach(opt=>{
+        set.add(opt.split(' ')[0].toLowerCase());
+      });
+    });
+  }
+  return set;
+}
+
+function renderCmdBlock(syntax, base, desc){
+  line(
+    '<div class="cmdblock">'+
+      '<div class="execline">[root@crow:~# exec ./'+esc(base)+'</div>'+
+      '<div class="nm">'+esc(syntax)+'</div>'+
+      '<div class="desc">'+esc(desc)+'</div>'+
+    '</div>'
+  );
+}
+
+function showCommands(){
+  line('');
+  line('<span class="out-info">[root@crow:~# cat /etc/commands.db</span>', 'out-info');
+  if(activeIdx() >= MISSIONS.length){
+    line('Vollständige Befehlsreferenz aller bekannten CROW_OS-Befehle.', 'out-dim');
+  } else {
+    line('Freigeschaltete Befehlsreferenz — basierend auf deinem Missionsfortschritt. Weitere Einträge erscheinen, je weiter du kommst.', 'out-dim');
+  }
+  const known = knownCommandBases();
+  let shown = 0, total = 0;
+  Object.keys(CMD_DEFS).forEach(cat=>{
+    const all = CMD_DEFS[cat];
+    total += all.length;
+    // Speicher-Befehle (save --export/--import/...) sind kein Missions-Mechanismus
+    // und daher immer sichtbar.
+    const entries = (cat === 'Speicher-Befehle')
+      ? all
+      : all.filter(([syntax, base])=>known.has(base));
+    if(!entries.length) return;
+    line('<div class="cat-head">// '+esc(cat)+'</div>');
+    entries.forEach(([syntax, base, desc])=>{
+      renderCmdBlock(syntax, base, desc);
+      shown++;
+    });
+  });
+  line('');
+  if(shown < total){
+    line(shown+' / '+total+' Befehle freigeschaltet.', 'out-dim');
+  }
+}
+
+const ALL_CMDS = ["probe","ping","relay","trace","mask","tunnel","spoof","jam","sever","echo","latency","bounce","cloak","sync","flood",
+"breach","ghost","slip","forge","clone","elevate","lockpick","impersonate","backdoor","rootkit","bypass","pivot","keylog","session","escalate",
+"weave","ls","siphon","decrypt","encrypt","shred","mirror","hollow","stitch","peek","inject","tag","diff","compress","rename",
+"burn","rewrite","decoy","flare","muffle","vanish","timestamp","null","ghost-write","cover","loop",
+"crow","scan","map","freq","watch","intercept","payload","implant","harvest","oracle","fingerprint","audit","entropy",
+"splinter","cascade","parasite","resurrect","void","phantom","abort","lockdown","fracture","blackout","reboot","tripwire",
+"save","help","clear","missions","mission","replay","hint"];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let state = {
+  rank:"ROOKIE", missionIdx:0, completed:[], badges:[],
+  energy:100, ghost:5, risk:0, log:[]
+};
+
+function save(){
+  window.storage.set('crow_save_v1', JSON.stringify(state), false).catch(()=>{});
+}
+async function load(){
+  try{
+    const r = await window.storage.get('crow_save_v1', false);
+    if(r && r.value){ state = Object.assign(state, JSON.parse(r.value)); }
+  }catch(e){ /* no save yet */ }
+}
+
+function renderStatus(){
+  document.getElementById('s-rank').textContent = state.rank;
+  document.getElementById('s-mission').textContent = replayIdx!==null
+    ? "↺ WIEDERHOLUNG"
+    : (state.missionIdx>=MISSIONS.length? "50 / 50 — ENDLOS" : String(state.missionIdx+1).padStart(2,'0')+" / 50");
+  document.getElementById('s-energy').textContent = state.energy+"%";
+  document.getElementById('b-energy').style.width = state.energy+"%";
+  document.getElementById('s-ghost').textContent = state.ghost;
+  document.getElementById('b-ghost').style.width = (state.ghost/5*100)+"%";
+  document.getElementById('s-risk').textContent = state.risk+"%";
+  document.getElementById('b-risk').style.width = state.risk+"%";
+
+  const idx = activeIdx();
+  const m = MISSIONS[idx];
+  if(m){
+    document.getElementById('s-missiontitle').textContent = (replayIdx!==null?"↺ ":"")+String(m.id).padStart(2,'0')+" · "+m.title;
+    document.getElementById('s-step').textContent = "Schritt "+(currentStep+1)+" / "+m.steps.length;
+  } else {
+    document.getElementById('s-missiontitle').textContent = "ENDLOS-MODUS verfügbar";
+    document.getElementById('s-step').textContent = "Tippe 'endless' zum Start";
+  }
+
+  document.getElementById('s-badges').innerHTML = state.badges.length
+    ? state.badges.map(b=>'<span class="badge-chip">'+esc(b)+'</span>').join('')
+    : 'keine';
+
+  const ml = document.getElementById('missionlist');
+  ml.innerHTML = MISSIONS.map((mm,i)=>{
+    let cls, symbol;
+    if(i===replayIdx){ cls='cur'; symbol='↺'; }
+    else if(state.completed.includes(i)){ cls='done'; symbol='✓'; }
+    else if(replayIdx===null && i===state.missionIdx){ cls='cur'; symbol='▶'; }
+    else { cls=''; symbol='·'; }
+    return '<div class="mrow '+cls+'"><span>'+String(mm.id).padStart(2,'0')+' '+esc(mm.title)+'</span><span>'+symbol+'</span></div>';
+  }).join('');
+}
+
+let currentStep = 0;
+let replayIdx = null; // index of mission currently being replayed (doesn't affect real progress), or null
+function activeIdx(){ return replayIdx !== null ? replayIdx : state.missionIdx; }
+
+/* =========================================================
+   OUTPUT HELPERS
+   ========================================================= */
+function showBrief(){
+  const idx = activeIdx();
+  const m = MISSIONS[idx];
+  if(!m){
+    line('');
+    line('Alle 50 Missionen abgeschlossen. <span class="out-info">Endlos-Modus</span> freigeschaltet — tippe <b>endless</b>.', 'out-ok');
+    return;
+  }
+  currentStep = 0;
+  line('');
+  line('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'out-dim');
+  line('<span class="brief-title">MISSION '+String(m.id).padStart(2,'0')+' — '+esc(m.title)+'</span> <span class="out-dim">['+m.stage+']</span>'+(replayIdx!==null?' <span class="out-warn">[WIEDERHOLUNG]</span>':''));
+  line(esc(m.brief), 'out-info');
+  line('Finde heraus, welcher Befehl hier greift — tippe <b>commands</b> für die vollständige Referenz.', 'out-dim');
+  if(replayIdx!==null){
+    line('Du wiederholst eine bereits abgeschlossene Mission. Dein Fortschritt ändert sich dadurch nicht. <b>replay --stop</b> bricht ab.', 'out-dim');
+  }
+  line('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'out-dim');
+}
+
+function advanceMission(){
+  if(replayIdx !== null){
+    line('<span class="out-ok">✔ MISSION ERFÜLLT (Wiederholung).</span> Dein regulärer Fortschritt bleibt unverändert.', 'out-ok');
+    replayIdx = null;
+    state.ghost = 5; state.risk = 0;
+    save();
+    line('');
+    line('Zurück zu deiner aktuellen Mission:', 'out-dim');
+    showBrief();
+    renderStatus();
+    return;
+  }
+  const idx = state.missionIdx;
+  state.completed.push(idx);
+  state.rank = MISSIONS[idx].stage;
+  if(BADGE_FOR[idx+1] && !state.badges.includes(BADGE_FOR[idx+1])){
+    state.badges.push(BADGE_FOR[idx+1]);
+    line('🏆 Badge erhalten: <b>'+esc(BADGE_FOR[idx+1])+'</b>', 'out-warn');
+  }
+  state.missionIdx++;
+  state.energy = Math.min(100, state.energy+5);
+  state.ghost = 5; state.risk = 0;
+  save();
+  if(state.missionIdx < MISSIONS.length){
+    line('<span class="out-ok">✔ MISSION ERFÜLLT.</span> Lade nächste Mission ...', 'out-ok');
+    showBrief();
+  } else {
+    line('<span class="out-ok">✔ MISSION ERFÜLLT.</span>', 'out-ok');
+    line('');
+    line('Alle 50 Missionen abgeschlossen. Operator-Rang: <b>PHANTOM</b>.', 'out-ok');
+    line('Der <span class="out-info">Endlos-Modus</span> ist freigeschaltet — tippe <b>endless</b>.', 'out-info');
+  }
+  renderStatus();
+}
+
+function cmdInfoFor(base){
+  for(const cat in CMD_DEFS){
+    const found = CMD_DEFS[cat].find(([syntax,b])=>b===base);
+    if(found) return {syntax:found[0], desc:found[2]};
+  }
+  return null;
+}
+
+function showHint(){
+  line('');
+  line('<span class="out-info">[root@crow:~# man --hint</span>', 'out-info');
+  if(replayIdx===null && activeIdx()>=MISSIONS.length){
+    line('Alle Missionen abgeschlossen — kein Hinweis nötig.', 'out-dim');
+    line('');
+    return;
+  }
+  const m = MISSIONS[activeIdx()];
+  if(!m){ line('Keine aktive Mission.', 'out-dim'); line(''); return; }
+  const step = m.steps[currentStep];
+  if(!step){ line('Dieser Schritt ist bereits abgeschlossen.', 'out-dim'); line(''); return; }
+  const bases = [...new Set(step.any.map(o=>o.split(' ')[0].toLowerCase()))];
+  const infos = bases.map(b=>({base:b, info:cmdInfoFor(b)})).filter(x=>x.info);
+  if(!infos.length){
+    line('Für diesen Schritt ist kein Hinweis hinterlegt.', 'out-dim');
+  } else if(infos.length===1){
+    const {syntax,desc} = infos[0].info;
+    line('Hinweis: Versuch\'s mit <b>'+esc(syntax)+'</b> — '+esc(desc), 'out-warn');
+  } else {
+    line('Hinweis: Mehrere Wege führen hier zum Ziel —', 'out-warn');
+    infos.forEach(({info})=>{
+      line('  • <b>'+esc(info.syntax)+'</b> — '+esc(info.desc), 'out-warn');
+    });
+  }
+  line('<span class="out-dim">Tippe <b>commands</b> für die vollständige Referenz freigeschalteter Befehle.</span>', 'out-dim');
+  line('');
+}
+
+function checkMissionInput(base, full){
+  const m = MISSIONS[activeIdx()];
+  if(!m) return false;
+  const step = m.steps[currentStep];
+  const matchedOpt = step.any.find(opt=>{
+    if(opt.includes(' ')) return full.startsWith(opt);
+    return base === opt;
+  });
+  if(matchedOpt){
+    const doneNum = currentStep+1;
+    const total = m.steps.length;
+    const doneBase = matchedOpt.split(' ')[0].toLowerCase();
+    const flavor = FLAVOR[doneBase];
+    currentStep++;
+    if(currentStep >= total){
+      line('<span class="out-ok">✓ Schritt '+doneNum+'/'+total+' abgeschlossen'+(flavor?(' — '+esc(flavor)):'')+'.</span>', 'out-ok');
+      advanceMission();
+    } else {
+      line('<span class="out-ok">✓ Schritt '+doneNum+'/'+total+' abgeschlossen'+(flavor?(' — '+esc(flavor)):'')+'.</span>', 'out-ok');
+      line('<span class="out-dim">→ weiter mit Schritt '+(currentStep+1)+'/'+total+'. Tippe <b>hint</b>, falls du nicht weiterkommst.</span>', 'out-dim');
+      renderStatus();
+    }
+    return true;
+  }
+  return false;
+}
+
+/* =========================================================
+   GENERIC COMMAND ENGINE  (flavor output for every command)
+   ========================================================= */
+const FLAVOR = {
+  probe:"Scan abgeschlossen — offene Ports und potenzielle Schwachstellen aufgelistet.",
+  ping:"Ziel antwortet — Verbindung steht.",
+  relay:"Verbindung über Relay-Knoten umgeleitet.",
+  trace:"Rückverfolgung unterbrochen.",
+  mask:"IP-Verschleierung umgeschaltet.",
+  tunnel:"Verschlüsselter Tunnel aufgebaut.",
+  spoof:"Identität erfolgreich vorgetäuscht.",
+  jam:"Frequenz gestört.",
+  sever:"Alle aktiven Verbindungen sofort gekappt. Keine Spur hinterlassen.",
+  echo:"Netzwerkkarte aktiver Verbindungen gerendert.",
+  latency:"Verbindungsqualität gemessen.",
+  bounce:"Verbindung durch Knotenkette geleitet — keine Rückverfolgbarkeit.",
+  cloak:"Verbindung als legitimer Dienst-Traffic getarnt.",
+  sync:"Timing mit Zielknoten synchronisiert.",
+  flood:"Ablenkungsverkehr erzeugt.",
+  breach:"Einbruch erfolgreich — Zugang erlangt.",
+  ghost:"Tarnungsstufe angepasst.",
+  slip:"In laufenden Dienst eingeschlichen, kein Login nötig.",
+  forge:"Authentifizierungstoken gefälscht.",
+  clone:"Benutzeridentität kopiert.",
+  elevate:"Berechtigungen erhöht.",
+  lockpick:"Systemtür geknackt.",
+  impersonate:"Gibt sich erfolgreich als anderer User aus.",
+  backdoor:"Dauerhafter versteckter Zugang erstellt.",
+  rootkit:"Persistenter Kernel-Level-Zugang installiert.",
+  bypass:"Sicherheitsschranke umgangen.",
+  pivot:"Kompromittiertes System als Sprungbrett genutzt.",
+  keylog:"Eingaben werden aufgezeichnet.",
+  session:"Aktive fremde Session übernommen.",
+  escalate:"Schwachstelle zur Rechteerhöhung genutzt.",
+  weave:"Navigation im Zieldateisystem.",
+  ls:"Verzeichnisinhalt gelistet.",
+  siphon:"Daten extrahiert.",
+  decrypt:"Datei entschlüsselt.",
+  encrypt:"Datei mit eigenem Key verschlüsselt.",
+  shred:"Datei unwiederbringlich gelöscht.",
+  mirror:"Getarnte Kopie erstellt.",
+  hollow:"Datei geleert, ohne sie zu löschen.",
+  stitch:"Fragmente zusammengefügt.",
+  peek:"Dateianfang gelesen.",
+  inject:"Code in Datei eingebettet.",
+  tag:"Datei intern markiert.",
+  diff:"Dateien verglichen.",
+  compress:"Verzeichnis komprimiert.",
+  rename:"Datei umbenannt.",
+  burn:"Log-Spuren gelöscht.",
+  rewrite:"Log-Eintrag mit Fake-Inhalt überschrieben.",
+  decoy:"Falscher Datenköder ausgesetzt.",
+  flare:"Falscher Alarm auf anderem System ausgelöst.",
+  muffle:"Aktivitätsmeldungen unterdrückt.",
+  vanish:"Alle eigenen Spuren vollständig entfernt.",
+  timestamp:"Zeitstempel manipuliert.",
+  null:"Ereignis aus Logs entfernt.",
+  cover:"Zugriffshistorie überschrieben.",
+  loop:"Prozess wiederholt alte Logs zur Tarnung.",
+  crow:"Statusbericht ausgegeben.",
+  scan:"Laufender Prozess analysiert.",
+  map:"Subnetzwerk kartiert.",
+  freq:"Kommunikationsmuster analysiert.",
+  watch:"Verzeichnis wird in Echtzeit überwacht.",
+  intercept:"Kommunikationskanal abgehört.",
+  payload:"Schadcode-Modul bereitgestellt.",
+  implant:"Dauerhafter Code im Zielsystem installiert.",
+  harvest:"Daten gesammelt.",
+  oracle:"Interne Datenbank nach Exploits befragt.",
+  fingerprint:"Detailliertes Zielsystem-Profil erstellt.",
+  audit:"Eigene Sichtbarkeit auf dem Zielsystem geprüft.",
+  entropy:"Zufälligkeit der Datei gemessen.",
+  splinter:"System in isolierte Segmente geteilt.",
+  cascade:"Verzögerte Kettenreaktion ausgelöst.",
+  parasite:"Unsichtbar an legitimen Prozess angehängt.",
+  resurrect:"Unterbrochene Session wiederhergestellt.",
+  void:"Alle Zieldaten dauerhaft gelöscht.",
+  phantom:"Maximale Tarnung aktiviert.",
+  abort:"Mission sofort abgebrochen, alle Verbindungen gekappt.",
+  lockdown:"System von außen gesperrt.",
+  fracture:"Authentifizierungssystem fragmentiert.",
+  blackout:"Netzwerkknoten stummgeschaltet.",
+  reboot:"System ohne sichtbare Unterbrechung neu gestartet.",
+  tripwire:"Alarm-Trigger gesetzt bzw. geprüft."
+};
+
+const CMD_BY_BASE = {};
+Object.values(CMD_DEFS).forEach(list=>{
+  list.forEach(([syntax, base, desc])=>{
+    (CMD_BY_BASE[base] = CMD_BY_BASE[base] || []).push({syntax, desc});
+  });
+});
+
+function genericRun(base, full){
+  if(!ALL_CMDS.includes(base)){
+    line('bash: '+esc(full)+': Befehl nicht gefunden. Tippe <b>help</b> für die Liste.', 'out-err');
+    return;
+  }
+  const tokenCount = full.trim().split(/\s+/).length;
+  const variants = CMD_BY_BASE[base];
+  if(tokenCount===1 && variants && variants.some(v=>v.syntax.includes('<'))){
+    line('Fehlende Angabe für <b>'+esc(base)+'</b>:', 'out-warn');
+    variants.forEach(v=>{
+      line('  <span class="out-info">'+esc(v.syntax)+'</span> — '+esc(v.desc), 'out-dim');
+    });
+    return;
+  }
+  const f = FLAVOR[base] || "Befehl ausgeführt.";
+  line('› '+f, 'out-dim');
+  // small risk drift for flavor commands not matching mission
+  if(MISSIONS[state.missionIdx]){
+    state.risk = Math.min(100, state.risk + (Math.random()<0.3?5:0));
+    renderStatus();
+  }
+}
+
+/* =========================================================
+   COMMANDS: help / missions / save / endless / clear
+   ========================================================= */
+function showHelp(){
+  line('');
+  line('<b>CROW_OS — Befehlsreferenz</b>', 'out-info');
+  line('Jede Mission erwartet bestimmte Befehle — die Statusleiste rechts zeigt den nächsten Schritt.', 'out-dim');
+  line('Allgemein nutzbare Befehle (Auszug): probe, ghost, breach, weave, ls, siphon, decrypt, burn, scan, map, oracle, vanish, abort ...', 'out-dim');
+  line('Spezial-Befehle: <b>commands</b> (vollständige Befehlsliste mit Definitionen), <b>hint</b> (Hinweis zum aktuellen Missionsschritt), <b>missions</b> (Liste), <b>mission</b> (aktuelle Brief erneut anzeigen), <b>replay &lt;nr&gt;</b> (abgeschlossene Mission erneut spielen, ohne Fortschritt zu verändern; <b>replay --stop</b> bricht ab), <b>crow --status</b>, <b>crow --log</b>, <b>crow --profile</b>, <b>save --export/--import/--status/--reset</b>, <b>endless</b>, <b>clear</b>', 'out-dim');
+  line('');
+}
+
+function showMissionsList(){
+  line('');
+  MISSIONS.forEach((m,i)=>{
+    const tag = i===replayIdx ? '<span class="out-warn">[↺]</span>' :
+      state.completed.includes(i) ? '<span class="out-ok">[✓]</span>' :
+      (replayIdx===null && i===state.missionIdx ? '<span class="out-warn">[▶]</span>' : '<span class="out-dim">[ ]</span>');
+    line(tag+' '+String(m.id).padStart(2,'0')+' — '+esc(m.title)+' <span class="out-dim">['+m.stage+']</span>');
+  });
+  line('');
+  line('Abgeschlossene Missionen [✓] kannst du mit <b>replay &lt;nr&gt;</b> erneut spielen, ohne deinen Fortschritt zu verändern.', 'out-dim');
+  line('');
+}
+
+function crowStatus(){
+  line('');
+  line('ENERGIE: '+state.energy+'%   GHOST-LEVEL: '+state.ghost+'/5   ENTDECKUNGSRISIKO: '+state.risk+'%', 'out-info');
+  line('RANG: '+state.rank+'   FORTSCHRITT: '+state.completed.length+' / 50 Missionen', 'out-info');
+  line('');
+}
+function crowLog(){
+  line('');
+  if(!state.log.length){ line('Keine Einträge in dieser Session.', 'out-dim'); }
+  else state.log.slice(-15).forEach(l=>line(l,'out-dim'));
+  line('');
+}
+function crowProfile(){
+  line('');
+  line('OPERATOR-PROFIL', 'out-info');
+  line('Rang: '+state.rank, 'out-dim');
+  line('Abgeschlossene Missionen: '+state.completed.length+' / 50', 'out-dim');
+  line('Badges: '+(state.badges.length? state.badges.join(', ') : 'keine'), 'out-dim');
+  line('');
+}
+
+let endlessMode = false;
+function startEndless(){
+  if(state.missionIdx < MISSIONS.length){
+    line('Endlos-Modus erst nach Mission 50 verfügbar.', 'out-err');
+    return;
+  }
+  endlessMode = true;
+  line('');
+  line('<span class="out-warn">ENDLOS-MODUS AKTIV</span> — wähle Systemtyp, Modifier, Ziel frei und kombiniere beliebige Befehle.', 'out-warn');
+  line('Es gibt keine feste Validierung mehr — das System protokolliert jede Aktion in deinem Log. Tippe <b>crow --log</b> jederzeit zur Übersicht.', 'out-dim');
+  line('');
+}
+
+/* ---- simple save (AES-GCM via WebCrypto, password as arg) ---- */
+async function deriveKey(pass, salt){
+  const enc = new TextEncoder();
+  const base = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt, iterations:100000, hash:'SHA-256'},
+    base, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']
+  );
+}
+function b64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function unb64(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+
+async function exportSave(pass){
+  if(!pass){ line('Nutzung: save --export &lt;passwort&gt;', 'out-err'); return; }
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(pass, salt);
+  const plaintext = JSON.stringify(state);
+  const enc = new TextEncoder().encode(plaintext);
+  const cipher = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, enc);
+  const hashBuf = await crypto.subtle.digest('SHA-256', enc);
+  const hashHex = [...new Uint8Array(hashBuf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,16);
+  const out = `CROW_OS SAVE v1\nSALT:   ${b64(salt)}\nIV:     ${b64(iv)}\nDATA:   ${b64(cipher)}\nCHECK:  ${hashHex}`;
+  const blob = new Blob([out], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fname = 'crow_save_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.txt';
+  a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+  line('> Encrypting operator profile...', 'out-dim');
+  line('> '+fname+' — ready  [↓ heruntergeladen]', 'out-ok');
+}
+
+function parseSaveFile(text){
+  const get = (label)=>{ const m = text.match(new RegExp(label+':\\s*(\\S+)')); return m?m[1]:null; };
+  return {salt:get('SALT'), iv:get('IV'), data:get('DATA'), check:get('CHECK')};
+}
+async function importSave(pass, text){
+  try{
+    const parts = parseSaveFile(text);
+    if(!parts.salt||!parts.iv||!parts.data){ line('ERROR: malformed save file', 'out-err'); return; }
+    const key = await deriveKey(pass, unb64(parts.salt));
+    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:unb64(parts.iv)}, key, unb64(parts.data));
+    const json = new TextDecoder().decode(plain);
+    state = JSON.parse(json);
+    save();
+    line('> Verifying integrity... OK', 'out-ok');
+    line('> '+state.completed.length+' missions loaded — Rank: '+state.rank, 'out-ok');
+    line('> Import complete.', 'out-ok');
+    renderStatus();
+  }catch(e){
+    line('ERROR: decryption failed — wrong key or corrupted save', 'out-err');
+  }
+}
+
+/* =========================================================
+   COMMAND DISPATCH
+   ========================================================= */
+async function runCommand(raw){
+  const full = raw.trim();
+  if(!full) return;
+  line('<span class="prompt-tag">[root@crow:~]#</span> <span class="echo-cmd">'+esc(full)+'</span>');
+  state.log.push(full);
+
+  const base = full.split(' ')[0].toLowerCase();
+
+  if(base==='help'){ showHelp(); return; }
+  if(base==='commands' || base==='cmdlist'){ showCommands(); return; }
+  if(base==='clear'){ term.innerHTML=''; return; }
+  if(base==='missions'){ showMissionsList(); return; }
+  if(base==='mission'){ showBrief(); return; }
+  if(base==='hint'){ showHint(); return; }
+  if(base==='replay'){
+    const args = full.split(' ').slice(1);
+    if(args[0]==='--stop' || args[0]==='stop'){
+      if(replayIdx===null){ line('Keine aktive Wiederholung.', 'out-err'); return; }
+      line('Wiederholung abgebrochen — zurück zur aktuellen Mission.', 'out-warn');
+      replayIdx = null;
+      showBrief(); renderStatus();
+      return;
+    }
+    const num = parseInt(args[0], 10);
+    if(!num || num<1 || num>50){ line('Nutzung: replay &lt;missionsnummer&gt; | replay --stop', 'out-err'); return; }
+    const idx = num-1;
+    if(!state.completed.includes(idx)){
+      line('Mission '+String(num).padStart(2,'0')+' wurde noch nicht abgeschlossen und kann nicht wiederholt werden.', 'out-err');
+      return;
+    }
+    replayIdx = idx;
+    line('');
+    line('<span class="out-warn">↺ WIEDERHOLUNGSMODUS aktiviert.</span> Dein regulärer Fortschritt bleibt unberührt.', 'out-warn');
+    showBrief();
+    renderStatus();
+    return;
+  }
+  if(base==='endless'){ startEndless(); return; }
+
+  if(base==='crow'){
+    if(full.includes('--status')) crowStatus();
+    else if(full.includes('--log')) crowLog();
+    else if(full.includes('--profile')) crowProfile();
+    else { line('Nutzung: crow --status | --log | --profile', 'out-err'); }
+    // still allow as mission step
+    checkMissionInput(base, full.toLowerCase());
+    return;
+  }
+
+  if(base==='save'){
+    const args = full.split(' ').slice(1);
+    if(args[0]==='--export'){ await exportSave(args.slice(1).join(' ')); return; }
+    if(args[0]==='--status'){
+      line('> Missionen: '+state.completed.length+' / 50', 'out-dim');
+      line('> Rang: '+state.rank, 'out-dim');
+      line('> Badges: '+state.badges.length, 'out-dim');
+      return;
+    }
+    if(args[0]==='--reset'){
+      if(confirm('Spielstand wirklich löschen?')){
+        state = {rank:"ROOKIE", missionIdx:0, completed:[], badges:[], energy:100, ghost:5, risk:0, log:[]};
+        save(); renderStatus(); showBrief();
+        line('> Spielstand zurückgesetzt.', 'out-warn');
+      }
+      return;
+    }
+    if(args[0]==='--import'){
+      pendingImportPass = args.slice(1).join(' ');
+      hiddenfile.click();
+      return;
+    }
+    line('Nutzung: save --export &lt;pw&gt; | --import &lt;pw&gt; | --status | --reset', 'out-err');
+    return;
+  }
+
+  // mission validation first
+  const lower = full.toLowerCase();
+  const matched = checkMissionInput(base, lower);
+  if(!matched){
+    genericRun(base, full);
+  }
+}
+
+let pendingImportPass = '';
+hiddenfile.addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=> importSave(pendingImportPass, reader.result);
+  reader.readAsText(file);
+  hiddenfile.value = '';
+});
+
+/* =========================================================
+   INPUT HANDLING
+   ========================================================= */
+let history = [], hIdx = -1;
+let acState = {prefix:null, matches:[], idx:-1};
+const AC_LIST = Array.from(new Set(ALL_CMDS)).sort();
+
+cmdin.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){
+    const v = cmdin.value;
+    if(v.trim()){ history.push(v); hIdx = history.length; }
+    cmdin.value='';
+    acState.prefix = null;
+    runCommand(v);
+  } else if(e.key==='ArrowUp'){
+    if(hIdx>0){ hIdx--; cmdin.value = history[hIdx]; }
+    e.preventDefault();
+  } else if(e.key==='ArrowDown'){
+    if(hIdx<history.length-1){ hIdx++; cmdin.value = history[hIdx]; } else { hIdx=history.length; cmdin.value=''; }
+    e.preventDefault();
+  } else if(e.key==='Tab'){
+    e.preventDefault();
+    const val = cmdin.value;
+    const tokens = val.split(' ');
+    if(tokens.length !== 1) return;
+    const typed = tokens[0].toLowerCase();
+    if(acState.basePrefix !== typed || !acState.matches.length){
+      acState.basePrefix = typed;
+      acState.matches = typed.length ? AC_LIST.filter(c=>c.startsWith(typed)) : [];
+      acState.idx = -1;
+    }
+    if(acState.matches.length === 1){
+      cmdin.value = acState.matches[0] + ' ';
+    } else if(acState.matches.length > 1){
+      acState.idx = (acState.idx + 1) % acState.matches.length;
+      cmdin.value = acState.matches[acState.idx];
+      if(acState.idx === 0){
+        line('<span class="out-dim">'+acState.matches.join('  ')+'</span>');
+      }
+    }
+  } else if(e.key !== 'Shift'){
+    acState.basePrefix = null;
+  }
+});
+document.addEventListener('click', ()=>{ cmdin.focus(); });
+
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const pw = document.getElementById('exp-pass').value;
+  if(!pw){ line('Bitte zuerst ein Passwort eingeben.', 'out-err'); return; }
+  exportSave(pw);
+});
+document.getElementById('btn-import').addEventListener('click', ()=>{
+  const pw = document.getElementById('imp-pass').value;
+  if(!pw){ line('Bitte zuerst das Passwort der Save-Datei eingeben.', 'out-err'); return; }
+  pendingImportPass = pw;
+  hiddenfile.click();
+});
+document.getElementById('footer-cmds').addEventListener('click', showCommands);
+document.getElementById('btn-hint').addEventListener('click', ()=>{ showHint(); cmdin.focus(); });
+document.getElementById('footer-export').addEventListener('click', ()=>{
+  document.getElementById('exp-pass').focus();
+  line('Passwort im Account-Panel rechts eingeben und auf "↓ Export" klicken — oder direkt: <b>save --export &lt;passwort&gt;</b>', 'out-info');
+});
+
+const bootTime = Date.now();
+setInterval(()=>{
+  const s = Math.floor((Date.now()-bootTime)/1000);
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), sec=s%60;
+  document.getElementById('uptime').textContent =
+    String(d).padStart(2,'0')+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(sec).padStart(2,'0')+'s';
+},1000);
+
+/* =========================================================
+   INIT
+   ========================================================= */
+async function init(){
+  await load();
+  line('<span class="out-ok">CROW_OS Terminal bereit.</span> Tippe <b>help</b> für eine Befehlsübersicht oder <b>mission</b> für das aktuelle Briefing.', 'out-ok');
+  renderStatus();
+  showBrief();
+  cmdin.focus();
+}
+</script>
+</body>
+</html>
